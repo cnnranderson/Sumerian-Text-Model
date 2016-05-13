@@ -1,0 +1,9 @@
+*.pyc
+*.zip
+pn_years.py
+tablet_graph.py
+tablet_names.py
+tablet_pns.txt
+tablet_years.py
+year_overlap.txt
+year_pns.txt

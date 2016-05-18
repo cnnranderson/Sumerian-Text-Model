@@ -11,9 +11,23 @@ from sklearn.base import clone
 
 from utils import *
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 
-def build_data(tablets):
+def build_data(tablets, unknown=False):
+	'''
+	Input:
+		tablets - Takes in the tablet object data that has all pns/gns/year of tablet
+
+	This method creates data points (read: feature vectors) out of every tablet
+	from a build up dictionary of all tablets. These should be read in from
+	the Texts.csv file, and processed with collect_pns_gns, and collect_years
+	methods. 
+
+	Returns:
+		data - the list of feature vectors (known as X)
+		labels - the targets of each data point (known as Y)
+	'''
 	data = []
 	labels = []
 
@@ -24,24 +38,52 @@ def build_data(tablets):
 		# Current tablet obj
 		c_tablet = tablets[tablet]
 
-		if c_tablet.year == -999 or c_tablet.year == 0: continue
+		if unknown:
+			if c_tablet.year == -999 or c_tablet.year == 0:
+				for pn in c_tablet.pns:
+					data_point[pn] = c_tablet.pns[pn]
 
-		for pn in c_tablet.pns:
-			data_point[pn] = c_tablet.pns[pn]
+				for gn in c_tablet.gns:
+					data_point[gn] = c_tablet.gns[gn]
 
-		for gn in c_tablet.gns:
-			data_point[gn] = c_tablet.gns[gn]
+				data_point['period'] = c_tablet.period
+				data.append(data_point)
 
-		data_point['period'] = c_tablet.period
-		data.append(data_point)
+				labels.append(c_tablet.year)
+		else:
+			if c_tablet.year == -999 or c_tablet.year == 0:
+				continue
 
-		labels.append(c_tablet.year)
+			for pn in c_tablet.pns:
+				data_point[pn] = c_tablet.pns[pn]
+
+			for gn in c_tablet.gns:
+				data_point[gn] = c_tablet.gns[gn]
+
+			data_point['period'] = c_tablet.period
+			data.append(data_point)
+
+			labels.append(c_tablet.year)
 
 	return data, labels
 
-def save_result(predictions, targets, le):
-	# Write predictions out to file
-	output = open("model_predictions.txt", "w+")
+def save_result(model, data, predictions, targets, le):
+	'''
+	Input:
+		model - name of model being used
+		predictions - predictions made by the model
+		targets - answer set that the predictions were compared against
+		le - label encoder to help inverse transform encoded labels
+		
+	Writes out the predictions compared against the targets.
+	'''
+	filename = 'prediction_output/' + model + '_predictions.txt'
+	try:
+		os.makedirs("prediction_output")
+	except:
+		pass
+	output = open(filename, "w+")
+	output.write(model + ' Predictions:\n')
 	for i in range(0, len(targets)):
 		pr = le.inverse_transform(predictions[i])
 		ac = le.inverse_transform(targets[i])
@@ -49,10 +91,106 @@ def save_result(predictions, targets, le):
 			output.write("Predicted: " + str(pr) + " Actual: " + str(ac) + "\n")
 	output.close()
 
+def plot_accuracies(graph_acc):
+	graph_data = []
+	for i in range(0, len(graph_acc)):
+		graph_data.append(np.concatenate(graph_acc[i], 0))
+
+	plt.figure(0)
+	plt.boxplot(graph_data, 0, '')
+	plt.xticks([1, 2, 3], ['MNB', 'Perc', 'SGD'])
+
+	plt.show()
+
+def plot_tablets_year(tablets):
+	years = {}
+
+	for tablet in tablets:
+		c_tablet = tablets[tablet]
+		years[c_tablet.year] = 1 if c_tablet.year not in years else years[c_tablet.year] + 1
+
+	fig = plt.figure()
+	ax = plt.subplot(111)
+	ticks = []
+	values = []
+	for year in sorted(years):
+		if year != 0 and year != "0":
+			values.append(years[year])
+			ticks.append(year)
+
+	width = .8
+	ax.set_title("Number of Tablets Per Year")
+	ax.set_xlabel("Normalized Year Name")
+	ax.set_ylabel("Number of Tablets")
+	ax.bar(range(len(years) - 1), values)
+	ax.set_xticks(np.arange(len(years) - 1) + width/2)
+	ax.set_xticklabels(ticks, rotation = 90)
+	ax.set_ylim([0, 350])
+	plt.show()
+	print sum(values)
+
+def plot_pns_year(tablets):
+	years = OrderedDict()
+	pns_observed = []
+
+	for tablet in tablets:
+		c_tablet = tablets[tablet]
+		
+		if c_tablet.year not in years:
+			years[c_tablet.year] = 0
+
+		for pn in c_tablet.pns:
+			if pn not in pns_observed:
+				years[c_tablet.year] += 1
+				pns_observed.append(pn)
+
+	fig = plt.figure()
+	ax = plt.subplot(111)
+	ticks = []
+	values = []
+	for year in sorted(years):
+		if year != 0 and year != "0":
+			values.append(years[year])
+			ticks.append(year)
+
+	width = .8
+	ax.set_title("Number of Unique Names Per Year")
+	ax.set_xlabel("Normalized Year Name")
+	ax.set_ylabel("Number of Unique Names")
+	ax.bar(range(len(years) - 1), values)
+	ax.set_xticks(np.arange(len(years) - 1) + width/2)
+	ax.set_xticklabels(ticks, rotation = 90)
+	ax.set_ylim([0, 175])
+	plt.show()
+
+	
+
 def train_model(model, training_data, training_targets):
+	'''
+	Input:
+		model - model to be trained
+		training_data - training set to train the model on
+		training_targets - correct labels of each data point
+		
+	This simply fits the model to the provided training set.
+	'''
 	model.fit(training_data, training_targets)
 
-def make_predictions(model, data, targets, le):
+def make_predictions(model, data, targets, le, name):
+	'''
+	Input:
+		model - model to use to predict
+		data - data to predict on
+		targets - actual answer set to compare against predictions
+		le - label encoder to normalize/transform labels
+		
+	Perform predictions using the provided model, over the data, and determine the
+	accuracy of our model's predictions. It will also save out the results for further 
+	observations.
+
+	Returns:
+		acc - the accuracy of the predictions that were made
+	'''
 	y_pred = model.predict(data)
 
 	inc_total = (targets != y_pred).sum()
@@ -60,7 +198,7 @@ def make_predictions(model, data, targets, le):
 
 	#print "Total: %6i Incorrect: %6i" % (data.shape[0], inc_total)
 	#print "Accuracy: %.2f%%" % (acc)
-	save_result(y_pred, targets, le)
+	save_result(name, data, y_pred, targets, le)
 
 	return acc
 
@@ -72,14 +210,21 @@ tablets = collect_pns_gns()
 collect_tablet_years(tablets)
 
 # Parse tablets into datapoints
-data, labels = build_data(tablets)
+uk_data, uk_labels = build_data(tablets, True)
+data, labels = build_data(tablets, False)
+
 v = DictVectorizer()
 vectorizer = make_pipeline(v, TfidfTransformer())
+
 data = vectorizer.fit_transform(data)
+uk_data = vectorizer.transform(uk_data)
 
 # Encode/normalize labels
 le = LabelEncoder()
-targets = le.fit_transform(labels)
+le.fit(labels + uk_labels)
+targets = le.transform(labels)
+uk_targets = le.transform(uk_labels)
+print le.classes_
 
 models = [
 	("MNB",        MultinomialNB(alpha=.1)),
@@ -106,6 +251,7 @@ for k in range(0, len(models)):
 		test_samples = data[test_indecies]
 		test_targets = targets[test_indecies]
 
+
 		###################
 		# Train and Predict
 		###################
@@ -116,7 +262,8 @@ for k in range(0, len(models)):
 		train_model(c_model, train_samples, train_targets)
 
 		# Run test predictions and compare to answer set
-		validation_acc.append(make_predictions(c_model, test_samples, test_targets, le, ))
+		validation_acc.append(make_predictions(c_model, test_samples, test_targets, le, models[k][0]))
+		make_predictions(c_model, uk_data, uk_targets, le, models[k][0])
 
 	# Print results
 	best_acc = 0.0 
@@ -138,15 +285,10 @@ for k in range(0, len(models)):
 	print "Worst: %.2f%% \n" % (worst_acc)
 
 # Plot accuracies
-graph_data = []
-for i in range(0, len(graph_acc)):
-	graph_data.append(np.concatenate(graph_acc[i], 0))
+#plot_accuracies(graph_acc)
+plot_tablets_year(tablets)
+#plot_pns_year(tablets)
 
-plt.figure(0)
-plt.boxplot(graph_data, 0, '')
-plt.xticks([1, 2, 3], ['MNB', 'Perc', 'SGD'])
-
-plt.show()
 
 
 

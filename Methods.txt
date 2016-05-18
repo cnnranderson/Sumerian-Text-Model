@@ -1,0 +1,28 @@
+Method:
+	Data:
+		We have been provided 3 data files (CSV format)
+		which contain information from ~1500 tablets. One
+		file contains each line-by-line readout of a tablet.
+		Another provides a list of all the referenced names
+		and geographical locations (known as PNs and GNs).
+
+	Procedure:
+		Our first approach was to use the frequency of appearance
+		of the names that are found across each tablet. Once we knew
+		all the possible years the names were found in, we cross referenced
+		the names of the unknown tablets to determine the "best fit" for
+		the tablet. We saw accuracies between 40%-55% when used on 
+		tablets we knew the years for. This, however, was only on
+		a deterministic set of tablets and did not use GNs.
+
+		Our second approach was more effective and lead to better
+		results. Using 3 different machine learning 
+		models - Perceptron, Stochastic Gradient Descent, and 
+		Multinomial Naïve Bayes - we split up the tablets into 
+		80%-20% sample sets that are randomized and shuffled every 
+		time. We train each model on the 80% set, and then have 
+		it make predictions on the 20% sample set. Once the model 
+		is done predicting, we compare the results to the actual 
+		answers (since they are tablets we know the years of). 
+		We observed 50-65% accuracies. However, once GNs were
+		included, we obtained 75%-85% identification accuracy.

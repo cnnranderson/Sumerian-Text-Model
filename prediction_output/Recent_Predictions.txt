@@ -1,0 +1,28 @@
+10-Fold Cross Validation Acc: 69.86%
+Sample Size: 138
+Best: 74.64%
+Worst: 63.77% 
+
+Model: Perceptron
+10-Fold Cross Validation Acc: 77.39%
+Sample Size: 138
+Best: 84.06%
+Worst: 68.84% 
+
+Model: SVM
+10-Fold Cross Validation Acc: 83.99%
+Sample Size: 138
+Best: 91.30%
+Worst: 78.99% 
+
+Model: SGD
+10-Fold Cross Validation Acc: 82.61%
+Sample Size: 138
+Best: 84.78%
+Worst: 80.43% 
+
+Model: DTree
+10-Fold Cross Validation Acc: 78.70%
+Sample Size: 138
+Best: 83.33%
+Worst: 74.64%

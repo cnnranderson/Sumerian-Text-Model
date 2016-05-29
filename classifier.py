@@ -5,6 +5,8 @@ from sklearn.feature_extraction.text import TfidfTransformer, TfidfVectorizer
 from sklearn.naive_bayes import GaussianNB
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import Perceptron, SGDClassifier
+from sklearn import svm
+from sklearn import tree
 from sklearn.pipeline import make_pipeline
 from sklearn import cross_validation
 from sklearn.base import clone
@@ -163,8 +165,6 @@ def plot_pns_year(tablets):
 	ax.set_ylim([0, 175])
 	plt.show()
 
-	
-
 def train_model(model, training_data, training_targets):
 	'''
 	Input:
@@ -224,12 +224,13 @@ le = LabelEncoder()
 le.fit(labels + uk_labels)
 targets = le.transform(labels)
 uk_targets = le.transform(uk_labels)
-print le.classes_
 
 models = [
 	("MNB",        MultinomialNB(alpha=.1)),
-	("Perceptron", Perceptron(alpha=.1)),
-	("SGD",        SGDClassifier(alpha=.1))
+	("Perceptron", Perceptron()),
+	("SVM",        svm.LinearSVC()),
+	("SGD",		   SGDClassifier()),
+	("DTree",	   tree.DecisionTreeClassifier())
 ]
 
 graph_acc = []
@@ -239,7 +240,7 @@ for k in range(0, len(models)):
 
 	for i in range(0, 10):
 		# Fetch Sample sets for training/testing
-		ss = cross_validation.ShuffleSplit(data.shape[0], n_iter=1, test_size=.10)
+		ss = cross_validation.ShuffleSplit(data.shape[0], n_iter=1, test_size=.20)
 
 		for train, test in ss:
 			train_indecies = train
@@ -286,7 +287,7 @@ for k in range(0, len(models)):
 
 # Plot accuracies
 #plot_accuracies(graph_acc)
-plot_tablets_year(tablets)
+#plot_tablets_year(tablets)
 #plot_pns_year(tablets)
 
 

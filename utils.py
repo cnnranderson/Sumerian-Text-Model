@@ -90,6 +90,7 @@ def collect_pns_gns():
 	for row in attestations:
 		try:
 			tablet_id = row[att_fields[0]]
+			if "Id" in tablet_id: continue
 
 			if tablet_id not in tablets:
 				tablets[tablet_id] = Tablet(tablet_id)

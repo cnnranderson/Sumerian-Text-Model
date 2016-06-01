@@ -6,6 +6,7 @@ class Tablet(object):
 		self.pns = {}
 		self.gns = {}
 		self.year = 0
+		self.predictions = []
 		self.period = 0
 
 	def add_pn(self, pn):
